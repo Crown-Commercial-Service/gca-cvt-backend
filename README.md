@@ -40,8 +40,6 @@ The application uses [`dotenv-rails`][dotenv-rails] to manage environment variab
 
 If you are new to the project, ask a developer to share their `.env.local`.
 
-See the [Environment variables](#environment-variables) section for a full list.
-
 ## Run the project
 
 ```shell
