@@ -10,9 +10,26 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "cashable_savings", force: :cascade do |t|
+    t.string "baseline_approach"
+    t.decimal "baseline_value", precision: 15, scale: 2
+    t.boolean "cashable_savings"
+    t.bigint "contract_record_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "expired_date_time"
+    t.boolean "expired_record"
+    t.string "ocid"
+    t.string "savings_type"
+    t.bigint "submitted_by_id"
+    t.datetime "updated_at", null: false
+    t.index ["expired_record"], name: "index_cashable_savings_on_expired_record"
+    t.index ["ocid"], name: "index_cashable_savings_on_ocid"
+    t.index ["submitted_by_id"], name: "index_cashable_savings_on_submitted_by_id"
+  end
 
   create_table "contracts", primary_key: "record_id", id: :serial, force: :cascade do |t|
     t.decimal "amount", precision: 15, scale: 2
@@ -41,4 +58,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_120000) do
     t.index ["organisation_id"], name: "index_contracts_on_organisation_id"
     t.index ["tender_id"], name: "index_contracts_on_tender_id"
   end
+
+  create_table "non_cashable_savings", force: :cascade do |t|
+    t.bigint "contract_record_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "expired_date_time"
+    t.boolean "expired_record"
+    t.string "ocid"
+    t.string "savings_type"
+    t.decimal "savings_value", precision: 15, scale: 2
+    t.bigint "submitted_by_id"
+    t.datetime "updated_at", null: false
+    t.index ["expired_record"], name: "index_non_cashable_savings_on_expired_record"
+    t.index ["ocid"], name: "index_non_cashable_savings_on_ocid"
+    t.index ["submitted_by_id"], name: "index_non_cashable_savings_on_submitted_by_id"
+  end
+
+  create_table "non_monetisable_savings", force: :cascade do |t|
+    t.bigint "contract_record_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "expired_date_time"
+    t.boolean "expired_record"
+    t.string "ocid"
+    t.string "savings_type"
+    t.bigint "submitted_by_id"
+    t.datetime "updated_at", null: false
+    t.index ["expired_record"], name: "index_non_monetisable_savings_on_expired_record"
+    t.index ["ocid"], name: "index_non_monetisable_savings_on_ocid"
+    t.index ["submitted_by_id"], name: "index_non_monetisable_savings_on_submitted_by_id"
+  end
+
+  add_foreign_key "cashable_savings", "contracts", column: "contract_record_id", primary_key: "record_id"
+  add_foreign_key "non_cashable_savings", "contracts", column: "contract_record_id", primary_key: "record_id"
+  add_foreign_key "non_monetisable_savings", "contracts", column: "contract_record_id", primary_key: "record_id"
 end

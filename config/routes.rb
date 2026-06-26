@@ -7,6 +7,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :contracts, only: [ :index ]
+      resources :savings, only: [ :show ], param: :ocid, constraints: { ocid: /[^\/]+/ }
     end
   end
 end

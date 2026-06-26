@@ -9,5 +9,11 @@ module CommercialValueTool
 
     self.table_name = "contracts"
     self.primary_key = :record_id
+
+    # @param ocid [String]
+    # @return [Contract, nil] the most recently inserted contract row for the OCID
+    def self.latest_for_ocid(ocid)
+      where(ocid: ocid).order(record_inserted_date: :desc).first
+    end
   end
 end
