@@ -398,3 +398,48 @@ paths:
                         type: string
                       message:
                         type: string
+  "/api/v1/savings/{type}/{savings_id}":
+    delete:
+      summary: Soft-delete a single savings record
+      tags:
+      - Savings
+      parameters:
+      - name: type
+        in: path
+        required: true
+        enum:
+        - cashable
+        - non-cashable
+        - non-monetisable
+        description: "Savings record type:\n * `cashable` \n * `non-cashable` \n *
+          `non-monetisable` \n "
+        schema:
+          type: string
+      - name: savings_id
+        in: path
+        required: true
+        description: Identifier of the savings record to delete
+        schema:
+          type: integer
+      responses:
+        '204':
+          description: savings record soft-deleted
+        '404':
+          description: no active savings record matches the given type and id
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                properties:
+                  error:
+                    type: object
+                    required:
+                    - code
+                    - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string

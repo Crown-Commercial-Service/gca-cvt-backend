@@ -14,6 +14,11 @@ module Api
 
         render json: Api::V1::SavingsSerializer.call(result)
       end
+
+      def destroy
+        CommercialValueTool::DeleteSaving.call(type: params[:type], savings_id: params[:savings_id])
+        head :no_content
+      end
     end
   end
 end
