@@ -1,6 +1,8 @@
 class ApplicationController < ActionController::API
   rescue_from StandardError, with: :render_internal_error
   rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
+  rescue_from ActiveRecord::RecordInvalid, with: :render_unprocessable_entity
+  rescue_from CommercialValueTool::UpdateSavings::MissingSavingsId, with: :render_unprocessable_entity
 
   private
 
@@ -10,6 +12,10 @@ class ApplicationController < ActionController::API
 
   def render_not_found(exception)
     render_error(code: "not_found", message: exception.message, status: :not_found)
+  end
+
+  def render_unprocessable_entity(exception)
+    render_error(code: "unprocessable_entity", message: exception.message, status: :unprocessable_content)
   end
 
   def render_internal_error(exception)

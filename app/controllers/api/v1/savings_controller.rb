@@ -15,9 +15,25 @@ module Api
         render json: Api::V1::SavingsSerializer.call(result)
       end
 
+      def update
+        CommercialValueTool::UpdateSavings.call(ocid: params[:ocid], payload: update_params)
+        render json: Api::V1::SavingsSerializer.call(CommercialValueTool::SavingsForOcid.call(params[:ocid]))
+      end
+
       def destroy
         CommercialValueTool::DeleteSaving.call(type: params[:type], savings_id: params[:savings_id])
         head :no_content
+      end
+
+      private
+
+      def update_params
+        params.permit(
+          :calculation_completed,
+          cashable_savings: [ :savings_id, :savings_type, :submitted_by_id, :cashable_savings, :baseline_approach, :baseline_value ],
+          non_cashable_savings: [ :savings_id, :savings_type, :submitted_by_id, :savings_value ],
+          non_monetisable_savings: [ :savings_id, :savings_type, :submitted_by_id ]
+        )
       end
     end
   end

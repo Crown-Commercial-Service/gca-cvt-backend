@@ -398,6 +398,272 @@ paths:
                         type: string
                       message:
                         type: string
+    put:
+      summary: Update savings for an OCID
+      tags:
+      - Savings
+      parameters:
+      - name: ocid
+        in: path
+        required: true
+        description: OCID of the contract whose savings should be updated
+        schema:
+          type: string
+      responses:
+        '200':
+          description: savings updated; response mirrors GET /api/v1/savings/{ocid}
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                    - contract
+                    - cashable_savings
+                    - non_cashable_savings
+                    - non_monetisable_savings
+                    properties:
+                      contract:
+                        type: object
+                        required:
+                        - record_id
+                        - ocid
+                        - title
+                        - calculation_completed
+                        properties:
+                          record_id:
+                            type: integer
+                          ocid:
+                            type: string
+                          title:
+                            type: string
+                          amount:
+                            type: string
+                            nullable: true
+                          currency:
+                            type: string
+                            nullable: true
+                          start_date:
+                            type: string
+                            format: date
+                            nullable: true
+                          end_date:
+                            type: string
+                            format: date
+                            nullable: true
+                          calculation_completed:
+                            type: boolean
+                          description:
+                            type: string
+                            nullable: true
+                          cpv_code:
+                            type: string
+                            nullable: true
+                          cpv_description:
+                            type: string
+                            nullable: true
+                          notice_type:
+                            type: string
+                            nullable: true
+                          source_api:
+                            type: string
+                            nullable: true
+                      cashable_savings:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                          - id
+                          - ocid
+                          - contract_record_id
+                          - savings_type
+                          - cashable_savings
+                          - baseline_approach
+                          properties:
+                            id:
+                              type: integer
+                            ocid:
+                              type: string
+                            contract_record_id:
+                              type: integer
+                            savings_type:
+                              type: string
+                            submitted_by_id:
+                              type: integer
+                              nullable: true
+                            created_at:
+                              type: string
+                              format: date-time
+                            updated_at:
+                              type: string
+                              format: date-time
+                            cashable_savings:
+                              type: boolean
+                            baseline_approach:
+                              type: string
+                            baseline_value:
+                              type: string
+                              nullable: true
+                      non_cashable_savings:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                          - id
+                          - ocid
+                          - contract_record_id
+                          - savings_type
+                          properties:
+                            id:
+                              type: integer
+                            ocid:
+                              type: string
+                            contract_record_id:
+                              type: integer
+                            savings_type:
+                              type: string
+                            submitted_by_id:
+                              type: integer
+                              nullable: true
+                            created_at:
+                              type: string
+                              format: date-time
+                            updated_at:
+                              type: string
+                              format: date-time
+                            savings_value:
+                              type: string
+                              nullable: true
+                      non_monetisable_savings:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                          - id
+                          - ocid
+                          - contract_record_id
+                          - savings_type
+                          properties:
+                            id:
+                              type: integer
+                            ocid:
+                              type: string
+                            contract_record_id:
+                              type: integer
+                            savings_type:
+                              type: string
+                            submitted_by_id:
+                              type: integer
+                              nullable: true
+                            created_at:
+                              type: string
+                              format: date-time
+                            updated_at:
+                              type: string
+                              format: date-time
+        '404':
+          description: no contract exists for the OCID, or a referenced savings_id
+            is missing or belongs to a different OCID
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                properties:
+                  error:
+                    type: object
+                    required:
+                    - code
+                    - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        '422':
+          description: a savings update item omitted savings_id, or persistence failed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                properties:
+                  error:
+                    type: object
+                    required:
+                    - code
+                    - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Per-type arrays of savings updates. Each item must include
+                a savings_id; only fields listed for that type are persisted. Optional
+                calculation_completed flips the latest contract row at the end of
+                the journey.
+              properties:
+                calculation_completed:
+                  type: boolean
+                cashable_savings:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - savings_id
+                    properties:
+                      savings_id:
+                        type: integer
+                      savings_type:
+                        type: string
+                      cashable_savings:
+                        type: boolean
+                      baseline_approach:
+                        type: string
+                      baseline_value:
+                        type: number
+                      submitted_by_id:
+                        type: integer
+                non_cashable_savings:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - savings_id
+                    properties:
+                      savings_id:
+                        type: integer
+                      savings_type:
+                        type: string
+                      savings_value:
+                        type: number
+                      submitted_by_id:
+                        type: integer
+                non_monetisable_savings:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - savings_id
+                    properties:
+                      savings_id:
+                        type: integer
+                      savings_type:
+                        type: string
+                      submitted_by_id:
+                        type: integer
+        required: true
   "/api/v1/savings/{type}/{savings_id}":
     delete:
       summary: Soft-delete a single savings record
