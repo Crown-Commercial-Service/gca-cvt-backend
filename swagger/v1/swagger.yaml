@@ -664,6 +664,119 @@ paths:
                       submitted_by_id:
                         type: integer
         required: true
+    post:
+      summary: Create a new savings record for an OCID
+      tags:
+      - Savings
+      parameters:
+      - name: ocid
+        in: path
+        required: true
+        description: OCID of the contract under which the new savings record will
+          be created
+        schema:
+          type: string
+      responses:
+        '201':
+          description: savings record created; response carries the generated savings_id
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                    - savings_id
+                    - type
+                    properties:
+                      savings_id:
+                        type: integer
+                      type:
+                        type: string
+                        enum:
+                        - cashable
+                        - non-cashable
+                        - non-monetisable
+        '404':
+          description: no contract exists for the given OCID
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                properties:
+                  error:
+                    type: object
+                    required:
+                    - code
+                    - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        '422':
+          description: the type slug is missing or unknown
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                properties:
+                  error:
+                    type: object
+                    required:
+                    - code
+                    - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - type
+              - saving
+              description: Creates a single savings record. The +type+ slug selects
+                the target table; only the per-type permitted fields inside +saving+
+                are persisted.
+              properties:
+                type:
+                  type: string
+                  enum:
+                  - cashable
+                  - non-cashable
+                  - non-monetisable
+                saving:
+                  type: object
+                  description: Per-type savings attributes. Unknown keys are ignored.
+                  properties:
+                    savings_type:
+                      type: string
+                    submitted_by_id:
+                      type: integer
+                    cashable_savings:
+                      type: boolean
+                      description: Cashable only
+                    baseline_approach:
+                      type: string
+                      description: Cashable only
+                    baseline_value:
+                      type: number
+                      description: Cashable only
+                    savings_value:
+                      type: number
+                      description: Non-cashable only
+        required: true
   "/api/v1/savings/{type}/{savings_id}":
     delete:
       summary: Soft-delete a single savings record

@@ -3,6 +3,7 @@ class ApplicationController < ActionController::API
   rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
   rescue_from ActiveRecord::RecordInvalid, with: :render_unprocessable_entity
   rescue_from CommercialValueTool::UpdateSavings::MissingSavingsId, with: :render_unprocessable_entity
+  rescue_from CommercialValueTool::CreateSaving::UnknownType, with: :render_unprocessable_entity
 
   private
 
