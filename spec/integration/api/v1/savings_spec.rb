@@ -128,4 +128,50 @@ RSpec.describe "api/v1/savings", type: :request do
       end
     end
   end
+
+  path "/api/v1/savings/{type}/{savings_id}" do
+    delete "Soft-delete a single savings record" do
+      tags "Savings"
+      produces "application/json"
+
+      parameter name: :type, in: :path, type: :string, required: true,
+                enum: %w[cashable non-cashable non-monetisable],
+                description: "Savings record type"
+      parameter name: :savings_id, in: :path, type: :integer, required: true,
+                description: "Identifier of the savings record to delete"
+
+      delete_error_schema = {
+        type: :object,
+        required: %w[error],
+        properties: {
+          error: {
+            type: :object,
+            required: %w[code message],
+            properties: {
+              code: { type: :string },
+              message: { type: :string }
+            }
+          }
+        }
+      }
+
+      response "204", "savings record soft-deleted" do
+        let(:contract) { create(:contract) }
+        let(:saving) { create(:cashable_saving, contract: contract) }
+        let(:type) { "cashable" }
+        let(:savings_id) { saving.id }
+
+        run_test!
+      end
+
+      response "404", "no active savings record matches the given type and id" do
+        schema(**delete_error_schema)
+
+        let(:type) { "cashable" }
+        let(:savings_id) { 999_999_999 }
+
+        run_test!
+      end
+    end
+  end
 end
