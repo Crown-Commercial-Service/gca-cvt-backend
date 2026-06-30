@@ -15,6 +15,16 @@ module Api
         render json: Api::V1::SavingsSerializer.call(result)
       end
 
+      def create
+        type = create_params[:type]
+        saving = CommercialValueTool::CreateSaving.call(
+          ocid: params[:ocid],
+          type: type,
+          attributes: create_params[:saving] || ActionController::Parameters.new
+        )
+        render json: { data: { savings_id: saving.id, type: type } }, status: :created
+      end
+
       def update
         CommercialValueTool::UpdateSavings.call(ocid: params[:ocid], payload: update_params)
         render json: Api::V1::SavingsSerializer.call(CommercialValueTool::SavingsForOcid.call(params[:ocid]))
@@ -26,6 +36,13 @@ module Api
       end
 
       private
+
+      def create_params
+        params.permit(
+          :type,
+          saving: [ :savings_type, :submitted_by_id, :cashable_savings, :baseline_approach, :baseline_value, :savings_value ]
+        )
+      end
 
       def update_params
         params.permit(

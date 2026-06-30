@@ -221,6 +221,94 @@ RSpec.describe "api/v1/savings", type: :request do
         run_test!
       end
     end
+
+    post "Create a new savings record for an OCID" do
+      tags "Savings"
+      consumes "application/json"
+      produces "application/json"
+
+      parameter name: :ocid, in: :path, type: :string, required: true,
+                description: "OCID of the contract under which the new savings record will be created"
+
+      parameter name: :body, in: :body, required: true, schema: {
+        type: :object,
+        required: %w[type saving],
+        description: "Creates a single savings record. The +type+ slug selects the target table; only the per-type permitted fields inside +saving+ are persisted.",
+        properties: {
+          type: {
+            type: :string,
+            enum: %w[cashable non-cashable non-monetisable]
+          },
+          saving: {
+            type: :object,
+            description: "Per-type savings attributes. Unknown keys are ignored.",
+            properties: {
+              savings_type: { type: :string },
+              submitted_by_id: { type: :integer },
+              cashable_savings: { type: :boolean, description: "Cashable only" },
+              baseline_approach: { type: :string, description: "Cashable only" },
+              baseline_value: { type: :number, description: "Cashable only" },
+              savings_value: { type: :number, description: "Non-cashable only" }
+            }
+          }
+        }
+      }
+
+      create_response_schema = {
+        type: :object,
+        required: %w[data],
+        properties: {
+          data: {
+            type: :object,
+            required: %w[savings_id type],
+            properties: {
+              savings_id: { type: :integer },
+              type: { type: :string, enum: %w[cashable non-cashable non-monetisable] }
+            }
+          }
+        }
+      }
+
+      response "201", "savings record created; response carries the generated savings_id" do
+        schema(**create_response_schema)
+
+        let(:contract) { create(:contract) }
+        let(:ocid) { contract.ocid }
+        let(:body) do
+          {
+            type: "cashable",
+            saving: {
+              savings_type: "contract_recompete",
+              submitted_by_id: 42,
+              cashable_savings: true,
+              baseline_approach: "previous_cost",
+              baseline_value: 250_000
+            }
+          }
+        end
+
+        run_test!
+      end
+
+      response "404", "no contract exists for the given OCID" do
+        schema(**error_schema)
+
+        let(:ocid) { "ocds-does-not-exist" }
+        let(:body) { { type: "cashable", saving: { savings_type: "contract_recompete" } } }
+
+        run_test!
+      end
+
+      response "422", "the type slug is missing or unknown" do
+        schema(**error_schema)
+
+        let(:contract) { create(:contract) }
+        let(:ocid) { contract.ocid }
+        let(:body) { { type: "mystery", saving: { savings_type: "contract_recompete" } } }
+
+        run_test!
+      end
+    end
   end
 
   path "/api/v1/savings/{type}/{savings_id}" do
