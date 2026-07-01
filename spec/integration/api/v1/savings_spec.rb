@@ -129,6 +129,86 @@ RSpec.describe "api/v1/savings", type: :request do
     end
   end
 
+  path "/api/v1/savings/{ocid}/peer-comparison" do
+    get "Get peer-group comparison for an OCID's cashable savings" do
+      tags "Savings"
+      produces "application/json"
+
+      parameter name: :ocid, in: :path, type: :string, required: true,
+                description: "OCID of the contract to compare against its peer group"
+
+      average_schema = {
+        type: :object,
+        required: %w[mean median absolute_mean absolute_median],
+        properties: {
+          mean: { type: :number, nullable: true },
+          median: { type: :number, nullable: true },
+          absolute_mean: { type: :string, nullable: true },
+          absolute_median: { type: :string, nullable: true }
+        }
+      }
+
+      peer_comparison_success_schema = {
+        type: :object,
+        required: %w[data],
+        properties: {
+          data: {
+            type: :object,
+            required: %w[contract_approach contract_percentage contract_absolute_value available_approaches peer_group_averages],
+            properties: {
+              contract_approach: { type: :string, nullable: true },
+              contract_percentage: { type: :number, nullable: true },
+              contract_absolute_value: { type: :string, nullable: true },
+              available_approaches: { type: :array, items: { type: :string } },
+              peer_group_averages: {
+                type: :object,
+                additionalProperties: average_schema
+              }
+            }
+          }
+        }
+      }
+
+      peer_comparison_error_schema = {
+        type: :object,
+        required: %w[error],
+        properties: {
+          error: {
+            type: :object,
+            required: %w[code message],
+            properties: {
+              code: { type: :string },
+              message: { type: :string }
+            }
+          }
+        }
+      }
+
+      response "200", "peer comparison returned for an OCID with peers" do
+        schema(**peer_comparison_success_schema)
+
+        let(:contract) { create(:contract, :completed, amount: 100_000) }
+        let(:ocid) { contract.ocid }
+
+        before do
+          create(:cashable_saving, contract: contract, baseline_approach: "previous_cost", baseline_value: 120_000)
+          peer = create(:contract, :completed, amount: 100_000)
+          create(:cashable_saving, contract: peer, baseline_approach: "previous_cost", baseline_value: 130_000)
+        end
+
+        run_test!
+      end
+
+      response "404", "no contract exists for the given OCID" do
+        schema(**peer_comparison_error_schema)
+
+        let(:ocid) { "ocds-does-not-exist" }
+
+        run_test!
+      end
+    end
+  end
+
   path "/api/v1/savings/{type}/{savings_id}" do
     delete "Soft-delete a single savings record" do
       tags "Savings"

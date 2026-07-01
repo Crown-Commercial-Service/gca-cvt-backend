@@ -398,6 +398,91 @@ paths:
                         type: string
                       message:
                         type: string
+  "/api/v1/savings/{ocid}/peer-comparison":
+    get:
+      summary: Get peer-group comparison for an OCID's cashable savings
+      tags:
+      - Savings
+      parameters:
+      - name: ocid
+        in: path
+        required: true
+        description: OCID of the contract to compare against its peer group
+        schema:
+          type: string
+      responses:
+        '200':
+          description: peer comparison returned for an OCID with peers
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                    - contract_approach
+                    - contract_percentage
+                    - contract_absolute_value
+                    - available_approaches
+                    - peer_group_averages
+                    properties:
+                      contract_approach:
+                        type: string
+                        nullable: true
+                      contract_percentage:
+                        type: number
+                        nullable: true
+                      contract_absolute_value:
+                        type: string
+                        nullable: true
+                      available_approaches:
+                        type: array
+                        items:
+                          type: string
+                      peer_group_averages:
+                        type: object
+                        additionalProperties:
+                          type: object
+                          required:
+                          - mean
+                          - median
+                          - absolute_mean
+                          - absolute_median
+                          properties:
+                            mean:
+                              type: number
+                              nullable: true
+                            median:
+                              type: number
+                              nullable: true
+                            absolute_mean:
+                              type: string
+                              nullable: true
+                            absolute_median:
+                              type: string
+                              nullable: true
+        '404':
+          description: no contract exists for the given OCID
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                properties:
+                  error:
+                    type: object
+                    required:
+                    - code
+                    - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
   "/api/v1/savings/{type}/{savings_id}":
     delete:
       summary: Soft-delete a single savings record
