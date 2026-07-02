@@ -15,6 +15,16 @@ module Api
         render json: Api::V1::SavingsSerializer.call(result)
       end
 
+      def peer_comparison
+        result = CommercialValueTool::PeerComparisonForOcid.call(params[:ocid])
+
+        unless result.contract_found?
+          raise ActiveRecord::RecordNotFound, "Contract with OCID '#{params[:ocid]}' not found"
+        end
+
+        render json: Api::V1::PeerComparisonSerializer.call(result)
+      end
+
       def update
         CommercialValueTool::UpdateSavings.call(ocid: params[:ocid], payload: update_params)
         render json: Api::V1::SavingsSerializer.call(CommercialValueTool::SavingsForOcid.call(params[:ocid]))
