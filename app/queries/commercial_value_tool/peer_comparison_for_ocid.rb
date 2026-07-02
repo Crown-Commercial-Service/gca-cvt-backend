@@ -6,7 +6,13 @@ module CommercialValueTool
   #
   # The peer group is "all contracts" (no CPV filter), excluding the
   # target contract's own row, and limited to peers with a completed
-  # calculation, a positive amount, and a non-expired cashable saving.
+  # calculation, a positive amount, a positive baseline value, and a
+  # non-expired cashable saving.
+  #
+  # Percentage figures (target and peer) are both expressed as a
+  # proportion of baseline_value (the counterfactual), not amount —
+  # dividing by amount instead would be unbounded above and undefined
+  # when a cost is fully avoided (amount = 0).
   class PeerComparisonForOcid
     PeerGroupAverage = Struct.new(:mean, :median, :absolute_mean, :absolute_median, keyword_init: true)
 
@@ -22,9 +28,9 @@ module CommercialValueTool
       )
       SELECT
         cs.baseline_approach,
-        AVG((cs.baseline_value - lc.amount) / lc.amount * 100)            AS mean,
+        AVG((cs.baseline_value - lc.amount) / cs.baseline_value * 100)    AS mean,
         PERCENTILE_CONT(0.5) WITHIN GROUP (
-          ORDER BY (cs.baseline_value - lc.amount) / lc.amount * 100
+          ORDER BY (cs.baseline_value - lc.amount) / cs.baseline_value * 100
         )                                                                  AS median,
         AVG(cs.baseline_value - lc.amount)                                AS absolute_mean,
         PERCENTILE_CONT(0.5) WITHIN GROUP (
@@ -35,6 +41,7 @@ module CommercialValueTool
       WHERE cs.expired_record IS NOT TRUE
         AND cs.ocid != ?
         AND cs.baseline_value IS NOT NULL
+        AND cs.baseline_value > 0
       GROUP BY cs.baseline_approach
     SQL
     private_constant :PEER_GROUP_SQL

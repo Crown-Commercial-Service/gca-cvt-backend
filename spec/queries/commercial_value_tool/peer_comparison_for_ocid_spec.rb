@@ -62,9 +62,9 @@ RSpec.describe CommercialValueTool::PeerComparisonForOcid do
       result = described_class.call(target.ocid)
       averages = result.peer_group_averages['previous_cost']
 
-      # percentages: (120000-100000)/100000*100 = 20.0, (220000-200000)/200000*100 = 10.0
-      expect(averages.mean).to eq(15.0)
-      expect(averages.median).to eq(15.0)
+      # percentages: (120000-100000)/120000*100 = 16.667, (220000-200000)/220000*100 = 9.091
+      expect(averages.mean).to eq(12.9)
+      expect(averages.median).to eq(12.9)
       # absolutes: 20000, 20000
       expect(averages.absolute_mean).to eq(BigDecimal('20000'))
       expect(averages.absolute_median).to eq(BigDecimal('20000'))
@@ -79,7 +79,7 @@ RSpec.describe CommercialValueTool::PeerComparisonForOcid do
       result = described_class.call(target.ocid)
       averages = result.peer_group_averages['previous_cost']
 
-      expect(averages.mean).to eq(20.0)
+      expect(averages.mean).to eq(16.7)
       expect(averages.absolute_mean).to eq(BigDecimal('20000'))
     end
 
