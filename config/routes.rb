@@ -7,7 +7,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :contracts, only: [ :index ]
-      resources :savings, only: [ :show ], param: :ocid, constraints: { ocid: /[^\/]+/ }
+      resources :savings, only: [ :show, :update ], param: :ocid, constraints: { ocid: /[^\/]+/ }
       get "savings/:ocid/peer-comparison", to: "savings#peer_comparison",
           as: :peer_comparison,
           constraints: { ocid: /[^\/]+/ }
