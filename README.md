@@ -59,6 +59,9 @@ Current endpoints:
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/contracts` | Paginated list of contracts |
+| GET | `/api/v1/savings/:ocid` | Consolidated savings payload for a contract |
+| GET | `/api/v1/savings/:ocid/peer-comparison` | Peer-group comparison for a contract's cashable savings |
+| DELETE | `/api/v1/savings/:type/:savings_id` | Soft-delete a single savings record |
 
 ### Linting
 
