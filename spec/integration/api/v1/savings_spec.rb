@@ -303,6 +303,85 @@ RSpec.describe "api/v1/savings", type: :request do
     end
   end
 
+  path "/api/v1/savings/{ocid}/{type}" do
+    post "Create a new savings record for an OCID" do
+      tags "Savings"
+      consumes "application/json"
+      produces "application/json"
+
+      parameter name: :ocid, in: :path, type: :string, required: true,
+                description: "OCID of the contract the new savings record belongs to"
+      parameter name: :type, in: :path, type: :string, required: true,
+                enum: %w[cashable non-cashable non-monetisable],
+                description: "Savings record type"
+
+      parameter name: :body, in: :body, required: true, schema: {
+        type: :object,
+        description: "Flat fields for the new savings record. Only fields relevant to the given type are persisted.",
+        properties: {
+          savings_type: { type: :string },
+          submitted_by_id: { type: :integer },
+          cashable_savings: { type: :boolean },
+          baseline_approach: { type: :string },
+          baseline_value: { type: :number },
+          savings_value: { type: :number }
+        }
+      }
+
+      create_success_schema = {
+        type: :object,
+        required: %w[savings_id],
+        properties: {
+          savings_id: { type: :integer }
+        }
+      }
+
+      create_error_schema = {
+        type: :object,
+        required: %w[error],
+        properties: {
+          error: {
+            type: :object,
+            required: %w[code message],
+            properties: {
+              code: { type: :string },
+              message: { type: :string }
+            }
+          }
+        }
+      }
+
+      response "201", "savings record created" do
+        schema(**create_success_schema)
+
+        let(:contract) { create(:contract) }
+        let(:ocid) { contract.ocid }
+        let(:type) { "cashable" }
+        let(:body) do
+          {
+            savings_type: "volume_reduction",
+            baseline_approach: "budget",
+            baseline_value: 250_000,
+            cashable_savings: true,
+            submitted_by_id: 42
+          }
+        end
+
+        run_test!
+      end
+
+      response "404", "no contract exists for the OCID, or the type is not recognised" do
+        schema(**create_error_schema)
+
+        let(:ocid) { "ocds-does-not-exist" }
+        let(:type) { "cashable" }
+        let(:body) { { savings_type: "volume_reduction", submitted_by_id: 42 } }
+
+        run_test!
+      end
+    end
+  end
+
   path "/api/v1/savings/{type}/{savings_id}" do
     delete "Soft-delete a single savings record" do
       tags "Savings"
