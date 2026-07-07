@@ -35,6 +35,13 @@ module Api
         head :no_content
       end
 
+      def create
+        saving = CommercialValueTool::CreateSaving.call(
+          ocid: params[:ocid], type: params[:type], attributes: create_params
+        )
+        render json: { savings_id: saving.id }, status: :created
+      end
+
       private
 
       def update_params
@@ -43,6 +50,12 @@ module Api
           cashable_savings: [ :savings_id, :savings_type, :submitted_by_id, :cashable_savings, :baseline_approach, :baseline_value ],
           non_cashable_savings: [ :savings_id, :savings_type, :submitted_by_id, :savings_value ],
           non_monetisable_savings: [ :savings_id, :savings_type, :submitted_by_id ]
+        )
+      end
+
+      def create_params
+        params.permit(
+          :savings_type, :submitted_by_id, :cashable_savings, :baseline_approach, :baseline_value, :savings_value
         )
       end
     end
