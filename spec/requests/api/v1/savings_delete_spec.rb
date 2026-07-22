@@ -97,10 +97,12 @@ RSpec.describe "DELETE /api/v1/savings/:type/:savings_id" do
   end
 
   context "when the type is invalid" do
-    it "is rejected by the route constraint with 404" do
+    it "returns 404 with a not_found error" do
       delete "/api/v1/savings/bogus-type/1"
 
       expect(response).to have_http_status(:not_found)
+      body = JSON.parse(response.body, symbolize_names: true)
+      expect(body[:error][:code]).to eq("not_found")
     end
   end
 

@@ -18,13 +18,11 @@ module CommercialValueTool
       "non-monetisable" => %w[savings_type submitted_by_id].freeze
     }.freeze
 
-    class UnknownType < StandardError; end
-
     # @param ocid [String]
     # @param type [String] one of the keys in {TYPE_MODELS}
     # @param attributes [Hash, ActionController::Parameters]
     # @return [ApplicationRecord] the newly created savings record
-    # @raise [UnknownType] +type+ is not a recognised savings type
+    # @raise [CommercialValueTool::UnknownSavingsType] +type+ is not a recognised savings type
     # @raise [ActiveRecord::RecordNotFound] OCID has no contract
     # @raise [ActiveRecord::RecordInvalid] persistence failed
     def self.call(ocid:, type:, attributes:)
@@ -45,7 +43,7 @@ module CommercialValueTool
     private
 
     def model
-      TYPE_MODELS.fetch(@type) { raise UnknownType, "Unknown savings type '#{@type}'" }
+      TYPE_MODELS.fetch(@type) { raise UnknownSavingsType, "Unknown savings type '#{@type}'" }
     end
 
     def permitted

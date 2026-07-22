@@ -15,7 +15,7 @@ module CommercialValueTool
     # @param type [String] one of the keys in {TYPE_MODELS}
     # @param savings_id [Integer, String]
     # @return [void]
-    # @raise [KeyError] if +type+ is not a recognised savings type
+    # @raise [CommercialValueTool::UnknownSavingsType] if +type+ is not a recognised savings type
     # @raise [ActiveRecord::RecordNotFound] if no active record matches
     def self.call(type:, savings_id:)
       new(type: type, savings_id: savings_id).call
@@ -27,7 +27,13 @@ module CommercialValueTool
     end
 
     def call
-      TYPE_MODELS.fetch(@type).not_expired.find(@savings_id).update!(expired_record: true)
+      model.not_expired.find(@savings_id).update!(expired_record: true)
+    end
+
+    private
+
+    def model
+      TYPE_MODELS.fetch(@type) { raise UnknownSavingsType, "Unknown savings type '#{@type}'" }
     end
   end
 end
