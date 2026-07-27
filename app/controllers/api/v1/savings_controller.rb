@@ -45,11 +45,7 @@ module Api
       private
 
       def update_params
-        nested = CommercialValueTool::SavingsType.slugs.index_with do |slug|
-          ([ :savings_id ] + CommercialValueTool::SavingsType.permitted_fields_for(slug).map(&:to_sym))
-        end.transform_keys { |slug| CommercialValueTool::SavingsType.payload_key_for(slug).to_sym }
-
-        params.permit(:calculation_completed, **nested)
+        params.permit(:calculation_completed, **CommercialValueTool::SavingsType.permitted_update_params)
       end
 
       def create_params
