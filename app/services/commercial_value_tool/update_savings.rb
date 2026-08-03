@@ -11,18 +11,6 @@ module CommercialValueTool
   # Does **not** create new savings records — creation is the POST
   # endpoint's responsibility (CVT-290).
   class UpdateSavings
-    TYPE_KEYS = {
-      "cashable_savings" => CashableSaving,
-      "non_cashable_savings" => NonCashableSaving,
-      "non_monetisable_savings" => NonMonetisableSaving
-    }.freeze
-
-    PERMITTED_FIELDS = {
-      "cashable_savings" => %w[savings_type submitted_by_id cashable_savings baseline_approach baseline_value].freeze,
-      "non_cashable_savings" => %w[savings_type submitted_by_id savings_value].freeze,
-      "non_monetisable_savings" => %w[savings_type submitted_by_id].freeze
-    }.freeze
-
     class MissingSavingsId < StandardError; end
 
     # @param ocid [String]
@@ -43,7 +31,7 @@ module CommercialValueTool
     def call
       ActiveRecord::Base.transaction do
         update_contract!
-        TYPE_KEYS.each_key { |key| update_collection!(key) }
+        SavingsType.slugs.each { |slug| update_collection!(slug) }
       end
     end
 
@@ -62,12 +50,13 @@ module CommercialValueTool
       contract.update!(calculation_completed: value)
     end
 
-    def update_collection!(key)
+    def update_collection!(slug)
+      key = SavingsType.payload_key_for(slug)
       rows = Array(@payload[key] || @payload[key.to_sym])
       return if rows.empty?
 
-      model = TYPE_KEYS.fetch(key)
-      permitted = PERMITTED_FIELDS.fetch(key)
+      model = SavingsType.model_for(slug)
+      permitted = SavingsType.permitted_fields_for(slug)
 
       rows.each do |row|
         attrs = row.transform_keys(&:to_s)

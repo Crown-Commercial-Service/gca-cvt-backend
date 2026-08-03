@@ -45,18 +45,11 @@ module Api
       private
 
       def update_params
-        params.permit(
-          :calculation_completed,
-          cashable_savings: [ :savings_id, :savings_type, :submitted_by_id, :cashable_savings, :baseline_approach, :baseline_value ],
-          non_cashable_savings: [ :savings_id, :savings_type, :submitted_by_id, :savings_value ],
-          non_monetisable_savings: [ :savings_id, :savings_type, :submitted_by_id ]
-        )
+        params.permit(:calculation_completed, **CommercialValueTool::SavingsType.permitted_update_params)
       end
 
       def create_params
-        params.permit(
-          :savings_type, :submitted_by_id, :cashable_savings, :baseline_approach, :baseline_value, :savings_value
-        )
+        params.permit(*CommercialValueTool::SavingsType.permitted_fields_for(params[:type]))
       end
     end
   end

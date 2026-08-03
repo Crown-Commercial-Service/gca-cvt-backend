@@ -13,7 +13,7 @@ Rails.application.routes.draw do
           constraints: { ocid: /[^\/]+/ }
       delete "savings/:type/:savings_id", to: "savings#destroy",
              as: :delete_saving,
-             constraints: { type: /cashable|non-cashable|non-monetisable/, savings_id: /\d+/ }
+             constraints: { savings_id: /\d+/ }
       post "savings/:ocid/:type", to: "savings#create",
            as: :create_saving,
            constraints: { ocid: /[^\/]+/ }

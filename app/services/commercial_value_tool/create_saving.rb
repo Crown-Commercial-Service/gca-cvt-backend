@@ -6,25 +6,11 @@ module CommercialValueTool
   # matches against an existing record, even if one of the same type
   # already exists for the OCID.
   class CreateSaving
-    TYPE_MODELS = {
-      "cashable" => CashableSaving,
-      "non-cashable" => NonCashableSaving,
-      "non-monetisable" => NonMonetisableSaving
-    }.freeze
-
-    PERMITTED_FIELDS = {
-      "cashable" => %w[savings_type submitted_by_id cashable_savings baseline_approach baseline_value].freeze,
-      "non-cashable" => %w[savings_type submitted_by_id savings_value].freeze,
-      "non-monetisable" => %w[savings_type submitted_by_id].freeze
-    }.freeze
-
-    class UnknownType < StandardError; end
-
     # @param ocid [String]
-    # @param type [String] one of the keys in {TYPE_MODELS}
+    # @param type [String] one of {SavingsType.slugs}
     # @param attributes [Hash, ActionController::Parameters]
     # @return [ApplicationRecord] the newly created savings record
-    # @raise [UnknownType] +type+ is not a recognised savings type
+    # @raise [CommercialValueTool::UnknownSavingsType] +type+ is not a recognised savings type
     # @raise [ActiveRecord::RecordNotFound] OCID has no contract
     # @raise [ActiveRecord::RecordInvalid] persistence failed
     def self.call(ocid:, type:, attributes:)
@@ -45,11 +31,11 @@ module CommercialValueTool
     private
 
     def model
-      TYPE_MODELS.fetch(@type) { raise UnknownType, "Unknown savings type '#{@type}'" }
+      SavingsType.model_for(@type)
     end
 
     def permitted
-      PERMITTED_FIELDS.fetch(@type)
+      SavingsType.permitted_fields_for(@type)
     end
 
     def contract

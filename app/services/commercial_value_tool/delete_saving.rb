@@ -6,16 +6,10 @@ module CommercialValueTool
   # "Soft delete" here means setting +expired_record+ to +true+; the
   # +Saving#not_expired+ scope then hides the row from subsequent reads.
   class DeleteSaving
-    TYPE_MODELS = {
-      "cashable" => CashableSaving,
-      "non-cashable" => NonCashableSaving,
-      "non-monetisable" => NonMonetisableSaving
-    }.freeze
-
-    # @param type [String] one of the keys in {TYPE_MODELS}
+    # @param type [String] one of {SavingsType.slugs}
     # @param savings_id [Integer, String]
     # @return [void]
-    # @raise [KeyError] if +type+ is not a recognised savings type
+    # @raise [CommercialValueTool::UnknownSavingsType] if +type+ is not a recognised savings type
     # @raise [ActiveRecord::RecordNotFound] if no active record matches
     def self.call(type:, savings_id:)
       new(type: type, savings_id: savings_id).call
@@ -27,7 +21,13 @@ module CommercialValueTool
     end
 
     def call
-      TYPE_MODELS.fetch(@type).not_expired.find(@savings_id).update!(expired_record: true)
+      model.not_expired.find(@savings_id).update!(expired_record: true)
+    end
+
+    private
+
+    def model
+      SavingsType.model_for(@type)
     end
   end
 end
