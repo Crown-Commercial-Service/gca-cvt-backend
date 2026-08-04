@@ -40,5 +40,13 @@ module CvtBeClean
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # This backend has no ActiveStorage attachments (no has_one_attached /
+    # has_many_attached anywhere), so disable the variant transformer to avoid
+    # eager-loading image_processing/vips at boot — which under
+    # image_processing 2.x raises without libvips + ruby-vips even declared.
+    # Rails 8.1's `load_defaults 8.1` sets variant_processor to :vips; override
+    # here for API-only usage.
+    config.active_storage.variant_processor = :disabled
   end
 end
