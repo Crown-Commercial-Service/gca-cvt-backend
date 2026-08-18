@@ -43,17 +43,19 @@ module CommercialValueTool
       class_methods do
         # Searches, filters, sorts and paginates contracts.
         #
+        # @param organisation_id [String] restricts results to this organisation; required, no default
         # @param search [String, nil] free-text search term matched against title and OCID
         # @param sort [String] the column name to sort results by (must be in {SORTABLE_COLUMNS})
         # @param direction [String] sort direction, either "asc" or "desc"
         # @param page [Integer, nil] the page number for Kaminari pagination
         # @param filters [Hash] date-range and value-range filter parameters
         # @return [SearchResults] a paginated, enumerable collection of {ContractData} items
-        def search(search: nil, sort: DEFAULT_SORT_COLUMN, direction: DEFAULT_SORT_DIRECTION, page: nil, filters: {})
+        def search(organisation_id:, search: nil, sort: DEFAULT_SORT_COLUMN, direction: DEFAULT_SORT_DIRECTION, page: nil, filters: {})
           sort_column = SORTABLE_COLUMNS.include?(sort) ? sort : DEFAULT_SORT_COLUMN
           sort_direction = %w[asc desc].include?(direction) ? direction : DEFAULT_SORT_DIRECTION
 
           contracts = latest_per_ocid
+          contracts = contracts.where(organisation_id: organisation_id)
           contracts = apply_search(contracts, search)
           contracts = apply_filters(contracts, filters)
 

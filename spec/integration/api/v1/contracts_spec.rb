@@ -6,6 +6,8 @@ RSpec.describe "api/v1/contracts", type: :request do
       tags "Contracts"
       produces "application/json"
 
+      before { stub_identity_context(organisation_id: "org-1") }
+
       parameter name: :search, in: :query, type: :string, required: false,
                 description: "Free-text search matched against title and OCID"
       parameter name: :sort, in: :query, type: :string, required: false,

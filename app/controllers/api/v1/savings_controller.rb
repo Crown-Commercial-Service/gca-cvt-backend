@@ -5,24 +5,19 @@ module Api
     # non-monetisable savings records. The UI layer reshapes the
     # response for results, CSV export and journey resume.
     class SavingsController < ApplicationController
+      skip_before_action :resolve_identity_context!, only: [ :update, :destroy, :create ]
+      skip_after_action :verify_organisation_scoped!, only: [ :update, :destroy, :create ]
+
       def show
-        result = CommercialValueTool::SavingsForOcid.call(params[:ocid])
+        gate_to_ocid(params[:ocid])
 
-        unless result.contract_found?
-          raise ActiveRecord::RecordNotFound, "Contract with OCID '#{params[:ocid]}' not found"
-        end
-
-        render json: Api::V1::SavingsSerializer.call(result)
+        render json: Api::V1::SavingsSerializer.call(CommercialValueTool::SavingsForOcid.call(params[:ocid]))
       end
 
       def peer_comparison
-        result = CommercialValueTool::PeerComparisonForOcid.call(params[:ocid])
+        gate_to_ocid(params[:ocid])
 
-        unless result.contract_found?
-          raise ActiveRecord::RecordNotFound, "Contract with OCID '#{params[:ocid]}' not found"
-        end
-
-        render json: Api::V1::PeerComparisonSerializer.call(result)
+        render json: Api::V1::PeerComparisonSerializer.call(CommercialValueTool::PeerComparisonForOcid.call(params[:ocid]))
       end
 
       def update

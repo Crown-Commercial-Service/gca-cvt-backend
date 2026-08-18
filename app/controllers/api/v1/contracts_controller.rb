@@ -13,8 +13,13 @@ module Api
 
       ALLOWED_STATUSES = CommercialValueTool::Contract::STATUS_MAP.values.freeze
 
+      skip_after_action :verify_organisation_scoped!, except: :index
+
       def index
+        mark_organisation_scoped!
+
         contracts = CommercialValueTool::Contract.search(
+          organisation_id: current_identity_context.organisation_id,
           search: params[:search].presence,
           sort: params[:sort],
           direction: params[:direction],

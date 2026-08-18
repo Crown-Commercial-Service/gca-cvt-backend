@@ -4,7 +4,7 @@ module CommercialValueTool
   RSpec.describe Contract::Searchable do
     let!(:payroll) do
       Contract.create!(
-        record_id: 1, title: 'Payroll Services', ocid: 'ocds-abc-001',
+        record_id: 1, organisation_id: 'org-1', title: 'Payroll Services', ocid: 'ocds-abc-001',
         amount: 1_000_000, start_date: Date.new(2025, 3, 1), end_date: Date.new(2026, 3, 1),
         record_inserted_date: Time.zone.now
       )
@@ -12,7 +12,7 @@ module CommercialValueTool
 
     let!(:it_services) do
       Contract.create!(
-        record_id: 2, title: 'IT Managed Services', ocid: 'ocds-abc-002',
+        record_id: 2, organisation_id: 'org-1', title: 'IT Managed Services', ocid: 'ocds-abc-002',
         amount: 500_000, start_date: Date.new(2024, 6, 1), end_date: Date.new(2025, 6, 1),
         record_inserted_date: Time.zone.now
       )
@@ -20,7 +20,7 @@ module CommercialValueTool
 
     let!(:cleaning) do
       Contract.create!(
-        record_id: 3, title: 'Cleaning Contract', ocid: 'ocds-abc-003',
+        record_id: 3, organisation_id: 'org-1', title: 'Cleaning Contract', ocid: 'ocds-abc-003',
         amount: 200_000, start_date: Date.new(2025, 9, 1), end_date: Date.new(2027, 9, 1),
         record_inserted_date: Time.zone.now
       )
@@ -28,13 +28,13 @@ module CommercialValueTool
 
     describe '.search' do
       it 'returns a SearchResults struct' do
-        result = Contract.search
+        result = Contract.search(organisation_id: 'org-1')
 
         expect(result).to be_a(Contract::SearchResults)
       end
 
       it 'returns ContractData items, not ActiveRecord objects' do
-        result = Contract.search
+        result = Contract.search(organisation_id: 'org-1')
 
         result.each do |item|
           expect(item).to be_a(Contract::ContractData)
@@ -43,7 +43,7 @@ module CommercialValueTool
       end
 
       it 'includes pagination metadata' do
-        result = Contract.search
+        result = Contract.search(organisation_id: 'org-1')
 
         expect(result.current_page).to eq(1)
         expect(result.total_pages).to be >= 1
@@ -54,14 +54,14 @@ module CommercialValueTool
       context 'with OCID deduplication' do
         let!(:payroll_old) do
           Contract.create!(
-            record_id: 4, title: 'Payroll Services (Old)', ocid: 'ocds-abc-001',
+            record_id: 4, organisation_id: 'org-1', title: 'Payroll Services (Old)', ocid: 'ocds-abc-001',
             amount: 800_000, start_date: Date.new(2024, 1, 1), end_date: Date.new(2025, 1, 1),
             record_inserted_date: 1.day.ago
           )
         end
 
         it 'returns only the most recent record per OCID' do
-          result = Contract.search
+          result = Contract.search(organisation_id: 'org-1')
           ocids = result.map(&:ocid)
 
           expect(ocids).to include('ocds-abc-001')
@@ -72,9 +72,36 @@ module CommercialValueTool
         end
       end
 
+      context 'with organisation scoping' do
+        let!(:other_org_contract) do
+          Contract.create!(
+            record_id: 5, organisation_id: 'org-2', title: 'Other Org Contract', ocid: 'ocds-other-org-001',
+            amount: 300_000, start_date: Date.new(2025, 1, 1), end_date: Date.new(2026, 1, 1),
+            record_inserted_date: Time.zone.now
+          )
+        end
+
+        it 'excludes another organisation\'s contract from items' do
+          result = Contract.search(organisation_id: 'org-1')
+
+          expect(result.items.map(&:ocid)).not_to include('ocds-other-org-001')
+        end
+
+        it 'excludes another organisation\'s contract from total_count and total_pages' do
+          result = Contract.search(organisation_id: 'org-1')
+
+          expect(result.total_count).to eq(3)
+          expect(result.total_pages).to eq(1)
+        end
+
+        it 'raises without an organisation_id' do
+          expect { Contract.search }.to raise_error(ArgumentError)
+        end
+      end
+
       context 'with calculation_completed' do
         it 'returns false when calculation has not been completed' do
-          result = Contract.search
+          result = Contract.search(organisation_id: 'org-1')
           item = result.items.find { |c| c.ocid == 'ocds-abc-001' }
 
           expect(item.calculation_completed).to be false
@@ -83,7 +110,7 @@ module CommercialValueTool
         it 'returns true when calculation has been completed' do
           payroll.update!(calculation_completed: true)
 
-          result = Contract.search
+          result = Contract.search(organisation_id: 'org-1')
           item = result.items.find { |c| c.ocid == 'ocds-abc-001' }
 
           expect(item.calculation_completed).to be true
@@ -92,19 +119,19 @@ module CommercialValueTool
 
       context 'with search' do
         it 'filters by title (case-insensitive)' do
-          result = Contract.search(search: 'payroll')
+          result = Contract.search(organisation_id: 'org-1', search: 'payroll')
 
           expect(result.items.map(&:title)).to contain_exactly('Payroll Services')
         end
 
         it 'filters by OCID' do
-          result = Contract.search(search: 'ocds-abc-002')
+          result = Contract.search(organisation_id: 'org-1', search: 'ocds-abc-002')
 
           expect(result.items.map(&:title)).to contain_exactly('IT Managed Services')
         end
 
         it 'returns no results when search does not match' do
-          result = Contract.search(search: 'nonexistent-xyz')
+          result = Contract.search(organisation_id: 'org-1', search: 'nonexistent-xyz')
 
           expect(result.items).to be_empty
         end
@@ -112,7 +139,7 @@ module CommercialValueTool
 
       context 'with sorting' do
         it 'defaults to start_date descending' do
-          result = Contract.search
+          result = Contract.search(organisation_id: 'org-1')
 
           expect(result.sort_column).to eq('start_date')
           expect(result.sort_direction).to eq('desc')
@@ -120,7 +147,7 @@ module CommercialValueTool
         end
 
         it 'sorts by title ascending' do
-          result = Contract.search(sort: 'title', direction: 'asc')
+          result = Contract.search(organisation_id: 'org-1', sort: 'title', direction: 'asc')
 
           expect(result.sort_column).to eq('title')
           expect(result.sort_direction).to eq('asc')
@@ -128,13 +155,13 @@ module CommercialValueTool
         end
 
         it 'sorts by amount descending' do
-          result = Contract.search(sort: 'amount', direction: 'desc')
+          result = Contract.search(organisation_id: 'org-1', sort: 'amount', direction: 'desc')
 
           expect(result.items.map(&:amount)).to eq([ 1_000_000, 500_000, 200_000 ])
         end
 
         it 'falls back to defaults for invalid sort params' do
-          result = Contract.search(sort: 'invalid', direction: 'sideways')
+          result = Contract.search(organisation_id: 'org-1', sort: 'invalid', direction: 'sideways')
 
           expect(result.sort_column).to eq('start_date')
           expect(result.sort_direction).to eq('desc')
@@ -144,7 +171,7 @@ module CommercialValueTool
           before { payroll.update!(calculation_completed: true) }
 
           it 'sorts completed before in_progress when ascending' do
-            result = Contract.search(sort: 'status', direction: 'asc')
+            result = Contract.search(organisation_id: 'org-1', sort: 'status', direction: 'asc')
 
             statuses = result.items.map(&:status)
             completed_index = statuses.index('completed')
@@ -154,7 +181,7 @@ module CommercialValueTool
           end
 
           it 'sorts in_progress before completed when descending' do
-            result = Contract.search(sort: 'status', direction: 'desc')
+            result = Contract.search(organisation_id: 'org-1', sort: 'status', direction: 'desc')
 
             statuses = result.items.map(&:status)
             in_progress_index = statuses.index('in_progress')
@@ -167,25 +194,25 @@ module CommercialValueTool
 
       context 'with date filters' do
         it 'filters by start_date_from' do
-          result = Contract.search(filters: { start_date_from: Date.new(2025, 1, 1) })
+          result = Contract.search(organisation_id: 'org-1', filters: { start_date_from: Date.new(2025, 1, 1) })
 
           expect(result.items.map(&:title)).to contain_exactly('Payroll Services', 'Cleaning Contract')
         end
 
         it 'filters by start_date_to' do
-          result = Contract.search(filters: { start_date_to: Date.new(2024, 12, 31) })
+          result = Contract.search(organisation_id: 'org-1', filters: { start_date_to: Date.new(2024, 12, 31) })
 
           expect(result.items.map(&:title)).to contain_exactly('IT Managed Services')
         end
 
         it 'filters by end_date_from' do
-          result = Contract.search(filters: { end_date_from: Date.new(2026, 1, 1) })
+          result = Contract.search(organisation_id: 'org-1', filters: { end_date_from: Date.new(2026, 1, 1) })
 
           expect(result.items.map(&:title)).to contain_exactly('Payroll Services', 'Cleaning Contract')
         end
 
         it 'filters by end_date_to' do
-          result = Contract.search(filters: { end_date_to: Date.new(2025, 12, 31) })
+          result = Contract.search(organisation_id: 'org-1', filters: { end_date_to: Date.new(2025, 12, 31) })
 
           expect(result.items.map(&:title)).to contain_exactly('IT Managed Services')
         end
@@ -193,19 +220,19 @@ module CommercialValueTool
 
       context 'with value filters' do
         it 'filters by value_min' do
-          result = Contract.search(filters: { value_min: '600000' })
+          result = Contract.search(organisation_id: 'org-1', filters: { value_min: '600000' })
 
           expect(result.items.map(&:title)).to contain_exactly('Payroll Services')
         end
 
         it 'filters by value_max' do
-          result = Contract.search(filters: { value_max: '300000' })
+          result = Contract.search(organisation_id: 'org-1', filters: { value_max: '300000' })
 
           expect(result.items.map(&:title)).to contain_exactly('Cleaning Contract')
         end
 
         it 'combines value_min and value_max' do
-          result = Contract.search(filters: { value_min: '300000', value_max: '800000' })
+          result = Contract.search(organisation_id: 'org-1', filters: { value_min: '300000', value_max: '800000' })
 
           expect(result.items.map(&:title)).to contain_exactly('IT Managed Services')
         end
@@ -215,19 +242,19 @@ module CommercialValueTool
         before { payroll.update!(calculation_completed: true) }
 
         it 'filters to completed contracts' do
-          result = Contract.search(filters: { status: 'completed' })
+          result = Contract.search(organisation_id: 'org-1', filters: { status: 'completed' })
 
           expect(result.items.map(&:title)).to contain_exactly('Payroll Services')
         end
 
         it 'filters to in_progress contracts' do
-          result = Contract.search(filters: { status: 'in_progress' })
+          result = Contract.search(organisation_id: 'org-1', filters: { status: 'in_progress' })
 
           expect(result.items.map(&:title)).to contain_exactly('IT Managed Services', 'Cleaning Contract')
         end
 
         it 'ignores unknown status values' do
-          result = Contract.search(filters: { status: 'bogus' })
+          result = Contract.search(organisation_id: 'org-1', filters: { status: 'bogus' })
 
           expect(result.items.map(&:title)).to contain_exactly(
             'Payroll Services', 'IT Managed Services', 'Cleaning Contract'
@@ -235,7 +262,7 @@ module CommercialValueTool
         end
 
         it 'combines with other filters' do
-          result = Contract.search(filters: { status: 'in_progress', value_min: '300000' })
+          result = Contract.search(organisation_id: 'org-1', filters: { status: 'in_progress', value_min: '300000' })
 
           expect(result.items.map(&:title)).to contain_exactly('IT Managed Services')
         end
@@ -245,7 +272,7 @@ module CommercialValueTool
         before do
           11.times do |i|
             Contract.create!(
-              record_id: 100 + i, title: "Bulk Contract #{i}", ocid: "ocds-bulk-#{format('%03d', i)}",
+              record_id: 100 + i, organisation_id: 'org-1', title: "Bulk Contract #{i}", ocid: "ocds-bulk-#{format('%03d', i)}",
               amount: 100_000, start_date: Date.new(2025, 1, 1) + i.days, end_date: Date.new(2026, 1, 1),
               record_inserted_date: Time.zone.now
             )
@@ -253,7 +280,7 @@ module CommercialValueTool
         end
 
         it 'returns the first page with up to 10 results' do
-          result = Contract.search(page: 1)
+          result = Contract.search(organisation_id: 'org-1', page: 1)
 
           expect(result.items.length).to eq(10)
           expect(result.current_page).to eq(1)
@@ -262,7 +289,7 @@ module CommercialValueTool
         end
 
         it 'returns the second page with remaining results' do
-          result = Contract.search(page: 2)
+          result = Contract.search(organisation_id: 'org-1', page: 2)
 
           expect(result.items.length).to eq(4)
           expect(result.current_page).to eq(2)
@@ -271,7 +298,7 @@ module CommercialValueTool
 
       context 'with combined search, filter, and sort' do
         it 'applies all criteria together' do
-          result = Contract.search(
+          result = Contract.search(organisation_id: 'org-1',
             search: 'Services',
             sort: 'amount',
             direction: 'asc',
