@@ -92,6 +92,8 @@ RSpec.describe "api/v1/savings", type: :request do
       tags "Savings"
       produces "application/json"
 
+      before { stub_identity_context(organisation_id: "org-1") }
+
       parameter name: :ocid, in: :path, type: :string, required: true,
                 description: "OCID of the contract whose savings should be returned"
 
@@ -227,6 +229,8 @@ RSpec.describe "api/v1/savings", type: :request do
     get "Get peer-group comparison for an OCID's cashable savings" do
       tags "Savings"
       produces "application/json"
+
+      before { stub_identity_context(organisation_id: "org-1") }
 
       parameter name: :ocid, in: :path, type: :string, required: true,
                 description: "OCID of the contract to compare against its peer group"
