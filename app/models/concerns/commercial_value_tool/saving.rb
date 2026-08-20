@@ -13,7 +13,7 @@ module CommercialValueTool
                  optional: false
 
       scope :for_ocid, ->(ocid) { where(ocid: ocid) }
-      scope :not_expired, -> { where("expired_record IS NOT TRUE") }
+      scope :not_expired, -> { where("#{table_name}.expired_record IS NOT TRUE") }
     end
   end
 end

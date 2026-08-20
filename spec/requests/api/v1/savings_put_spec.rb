@@ -1,9 +1,11 @@
 require "rails_helper"
 
 RSpec.describe "PUT /api/v1/savings/:ocid" do
-  let!(:contract) { create(:contract, calculation_completed: false) }
+  let!(:contract) { create(:contract, calculation_completed: false, organisation_id: "org-1") }
   let(:ocid) { contract.ocid }
   let(:headers) { { "CONTENT_TYPE" => "application/json" } }
+
+  before { stub_identity_context(organisation_id: "org-1", subject: "user-1") }
 
   describe "updating a single cashable saving" do
     let!(:cashable) do
@@ -42,14 +44,14 @@ RSpec.describe "PUT /api/v1/savings/:ocid" do
       expect(cashable.baseline_value).to eq(250_000)
     end
 
-    it "carries submitted_by_id through to the persisted record" do
-      expect(cashable.reload.submitted_by_id).to eq(42)
+    it "derives submitted_by_id from the caller's identity, ignoring the payload value" do
+      expect(cashable.reload.submitted_by_id).to eq("user-1")
     end
 
     it "returns the updated payload mirroring GET" do
       body = JSON.parse(response.body, symbolize_names: true)
       expect(body[:data][:cashable_savings].first[:baseline_value]).to eq("250000.0")
-      expect(body[:data][:cashable_savings].first[:submitted_by_id]).to eq(42)
+      expect(body[:data][:cashable_savings].first[:submitted_by_id]).to eq("user-1")
     end
   end
 
@@ -123,6 +125,18 @@ RSpec.describe "PUT /api/v1/savings/:ocid" do
     end
   end
 
+  describe "isolation between organisations" do
+    let(:other_org_contract) { create(:contract, organisation_id: "org-2") }
+
+    it "returns 404 when the contract belongs to a different organisation" do
+      put "/api/v1/savings/#{other_org_contract.ocid}",
+          params: { calculation_completed: true }.to_json, headers: headers
+
+      expect(response).to have_http_status(:not_found)
+      expect(other_org_contract.reload.calculation_completed).to be(false)
+    end
+  end
+
   describe "transactional behaviour" do
     let!(:cashable_a) { create(:cashable_saving, contract: contract, baseline_value: 10_000) }
     let!(:cashable_b) { create(:cashable_saving, contract: contract, baseline_value: 20_000) }
@@ -167,6 +181,15 @@ RSpec.describe "PUT /api/v1/savings/:ocid" do
       expect(response).to have_http_status(:not_found)
       body = JSON.parse(response.body, symbolize_names: true)
       expect(body[:error][:code]).to eq("not_found")
+    end
+
+    it "returns 401 when no identity can be resolved" do
+      allow(Rails.application.config.x.identity_resolver).to receive(:resolve).and_return(nil)
+
+      put "/api/v1/savings/#{ocid}", params: { calculation_completed: true }.to_json, headers: headers
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(contract.reload.calculation_completed).to be(false)
     end
 
     it "returns 404 when the savings_id does not exist for the type" do

@@ -26,7 +26,7 @@ RSpec.describe "api/v1/savings", type: :request do
     ocid: { type: :string },
     contract_record_id: { type: :integer },
     savings_type: { type: :string },
-    submitted_by_id: { type: :integer, nullable: true },
+    submitted_by_id: { type: :string, nullable: true },
     created_at: { type: :string, format: :"date-time" },
     updated_at: { type: :string, format: :"date-time" }
   }
@@ -135,6 +135,8 @@ RSpec.describe "api/v1/savings", type: :request do
       consumes "application/json"
       produces "application/json"
 
+      before { stub_identity_context(organisation_id: "org-1") }
+
       parameter name: :ocid, in: :path, type: :string, required: true,
                 description: "OCID of the contract whose savings should be updated"
 
@@ -153,8 +155,7 @@ RSpec.describe "api/v1/savings", type: :request do
                 savings_type: { type: :string },
                 cashable_savings: { type: :boolean },
                 baseline_approach: { type: :string },
-                baseline_value: { type: :number },
-                submitted_by_id: { type: :integer }
+                baseline_value: { type: :number }
               }
             }
           },
@@ -166,8 +167,7 @@ RSpec.describe "api/v1/savings", type: :request do
               properties: {
                 savings_id: { type: :integer },
                 savings_type: { type: :string },
-                savings_value: { type: :number },
-                submitted_by_id: { type: :integer }
+                savings_value: { type: :number }
               }
             }
           },
@@ -178,8 +178,7 @@ RSpec.describe "api/v1/savings", type: :request do
               required: %w[savings_id],
               properties: {
                 savings_id: { type: :integer },
-                savings_type: { type: :string },
-                submitted_by_id: { type: :integer }
+                savings_type: { type: :string }
               }
             }
           }
@@ -196,7 +195,7 @@ RSpec.describe "api/v1/savings", type: :request do
           {
             calculation_completed: true,
             cashable_savings: [
-              { savings_id: cashable.id, baseline_value: 250_000, submitted_by_id: 42 }
+              { savings_id: cashable.id, baseline_value: 250_000 }
             ]
           }
         end
@@ -313,6 +312,8 @@ RSpec.describe "api/v1/savings", type: :request do
       consumes "application/json"
       produces "application/json"
 
+      before { stub_identity_context(organisation_id: "org-1") }
+
       parameter name: :ocid, in: :path, type: :string, required: true,
                 description: "OCID of the contract the new savings record belongs to"
       parameter name: :type, in: :path, type: :string, required: true,
@@ -324,7 +325,6 @@ RSpec.describe "api/v1/savings", type: :request do
         description: "Flat fields for the new savings record. Only fields relevant to the given type are persisted.",
         properties: {
           savings_type: { type: :string },
-          submitted_by_id: { type: :integer },
           cashable_savings: { type: :boolean },
           baseline_approach: { type: :string },
           baseline_value: { type: :number },
@@ -366,8 +366,7 @@ RSpec.describe "api/v1/savings", type: :request do
             savings_type: "volume_reduction",
             baseline_approach: "budget",
             baseline_value: 250_000,
-            cashable_savings: true,
-            submitted_by_id: 42
+            cashable_savings: true
           }
         end
 
@@ -379,7 +378,7 @@ RSpec.describe "api/v1/savings", type: :request do
 
         let(:ocid) { "ocds-does-not-exist" }
         let(:type) { "cashable" }
-        let(:body) { { savings_type: "volume_reduction", submitted_by_id: 42 } }
+        let(:body) { { savings_type: "volume_reduction" } }
 
         run_test!
       end
@@ -390,6 +389,8 @@ RSpec.describe "api/v1/savings", type: :request do
     delete "Soft-delete a single savings record" do
       tags "Savings"
       produces "application/json"
+
+      before { stub_identity_context(organisation_id: "org-1") }
 
       parameter name: :type, in: :path, type: :string, required: true,
                 enum: %w[cashable non-cashable non-monetisable],

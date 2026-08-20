@@ -1,6 +1,6 @@
 module CommercialValueTool
-  # Updates an existing savings payload for a single OCID. Backs the
-  # +PUT /api/v1/savings/:ocid+ endpoint.
+  # Updates an existing savings payload for a single, already org-gated
+  # contract. Backs the +PUT /api/v1/savings/:ocid+ endpoint.
   #
   # The payload can carry updates for any combination of cashable,
   # non-cashable and non-monetisable savings, identified per-item by
@@ -13,19 +13,21 @@ module CommercialValueTool
   class UpdateSavings
     class MissingSavingsId < StandardError; end
 
-    # @param ocid [String]
+    # @param contract [Contract] a caller-owned contract
     # @param payload [Hash, ActionController::Parameters]
-    # @raise [ActiveRecord::RecordNotFound] OCID has no contract, or a
-    #   referenced savings_id is missing or belongs to a different OCID
+    # @param identity_context [IdentityContext] the caller's resolved identity
+    # @raise [ActiveRecord::RecordNotFound] a referenced savings_id is
+    #   missing or belongs to a different OCID
     # @raise [MissingSavingsId] a per-item update did not include a savings_id
     # @raise [ActiveRecord::RecordInvalid] persistence failed
-    def self.call(ocid:, payload:)
-      new(ocid: ocid, payload: payload).call
+    def self.call(contract:, payload:, identity_context:)
+      new(contract: contract, payload: payload, identity_context: identity_context).call
     end
 
-    def initialize(ocid:, payload:)
-      @ocid = ocid
+    def initialize(contract:, payload:, identity_context:)
+      @contract = contract
       @payload = payload.respond_to?(:to_unsafe_h) ? payload.to_unsafe_h : payload.to_h
+      @identity_context = identity_context
     end
 
     def call
@@ -37,17 +39,12 @@ module CommercialValueTool
 
     private
 
-    def contract
-      @contract ||= Contract.latest_for_ocid(@ocid) ||
-        raise(ActiveRecord::RecordNotFound, "Contract with OCID '#{@ocid}' not found")
-    end
-
     def update_contract!
       return unless @payload.key?("calculation_completed") || @payload.key?(:calculation_completed)
 
       value = @payload["calculation_completed"]
       value = @payload[:calculation_completed] if value.nil?
-      contract.update!(calculation_completed: value)
+      @contract.update!(calculation_completed: value)
     end
 
     def update_collection!(slug)
@@ -61,8 +58,8 @@ module CommercialValueTool
       rows.each do |row|
         attrs = row.transform_keys(&:to_s)
         savings_id = attrs["savings_id"] || raise(MissingSavingsId, "Each #{key} update must include a savings_id")
-        record = model.for_ocid(@ocid).not_expired.find(savings_id)
-        record.update!(attrs.slice(*permitted))
+        record = model.for_ocid(@contract.ocid).not_expired.find(savings_id)
+        record.update!(attrs.slice(*permitted).merge(submitted_by_id: @identity_context.subject))
       end
     end
   end

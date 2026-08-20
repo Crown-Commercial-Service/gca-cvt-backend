@@ -5,9 +5,6 @@ module Api
     # non-monetisable savings records. The UI layer reshapes the
     # response for results, CSV export and journey resume.
     class SavingsController < ApplicationController
-      skip_before_action :resolve_identity_context!, only: [ :update, :destroy, :create ]
-      skip_after_action :verify_organisation_scoped!, only: [ :update, :destroy, :create ]
-
       def show
         gate_to_ocid(params[:ocid])
 
@@ -21,18 +18,21 @@ module Api
       end
 
       def update
-        CommercialValueTool::UpdateSavings.call(ocid: params[:ocid], payload: update_params)
+        contract = gate_to_ocid(params[:ocid])
+        CommercialValueTool::UpdateSavings.call(contract: contract, payload: update_params, identity_context: current_identity_context)
         render json: Api::V1::SavingsSerializer.call(CommercialValueTool::SavingsForOcid.call(params[:ocid]))
       end
 
       def destroy
-        CommercialValueTool::DeleteSaving.call(type: params[:type], savings_id: params[:savings_id])
+        saving = gate_to_saving(params[:type], params[:savings_id])
+        CommercialValueTool::DeleteSaving.call(saving: saving)
         head :no_content
       end
 
       def create
+        contract = gate_to_ocid(params[:ocid])
         saving = CommercialValueTool::CreateSaving.call(
-          ocid: params[:ocid], type: params[:type], attributes: create_params
+          contract: contract, type: params[:type], attributes: create_params, identity_context: current_identity_context
         )
         render json: { savings_id: saving.id }, status: :created
       end

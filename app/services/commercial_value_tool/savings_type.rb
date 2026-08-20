@@ -8,17 +8,17 @@ module CommercialValueTool
       "cashable" => {
         model: CashableSaving,
         payload_key: "cashable_savings",
-        permitted_fields: %w[savings_type submitted_by_id cashable_savings baseline_approach baseline_value].freeze
+        permitted_fields: %w[savings_type cashable_savings baseline_approach baseline_value].freeze
       },
       "non-cashable" => {
         model: NonCashableSaving,
         payload_key: "non_cashable_savings",
-        permitted_fields: %w[savings_type submitted_by_id savings_value].freeze
+        permitted_fields: %w[savings_type savings_value].freeze
       },
       "non-monetisable" => {
         model: NonMonetisableSaving,
         payload_key: "non_monetisable_savings",
-        permitted_fields: %w[savings_type submitted_by_id].freeze
+        permitted_fields: %w[savings_type].freeze
       }
     }.freeze
 
