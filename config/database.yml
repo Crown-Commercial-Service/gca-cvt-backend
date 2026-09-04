@@ -55,20 +55,8 @@ test:
 # for a full overview on how database connection configuration can be specified.
 #
 production:
-  primary: &primary_production
+  primary:
     <<: *default
     database: cvt_be_clean_production
     username: cvt_be_clean
     password: <%= ENV["CVT_BE_CLEAN_DATABASE_PASSWORD"] %>
-  cache:
-    <<: *primary_production
-    database: cvt_be_clean_production_cache
-    migrations_paths: db/cache_migrate
-  queue:
-    <<: *primary_production
-    database: cvt_be_clean_production_queue
-    migrations_paths: db/queue_migrate
-  cable:
-    <<: *primary_production
-    database: cvt_be_clean_production_cable
-    migrations_paths: db/cable_migrate
