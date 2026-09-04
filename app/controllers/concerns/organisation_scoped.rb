@@ -27,6 +27,21 @@ module OrganisationScoped
     contract
   end
 
+  # Resolves a caller-owned savings record for a type/id pair, and marks
+  # the current action as having applied organisation scoping.
+  #
+  # @param type [String]
+  # @param savings_id [Integer, String]
+  # @return [ApplicationRecord]
+  # @raise [ActiveRecord::RecordNotFound]
+  def gate_to_saving(type, savings_id)
+    saving = CommercialValueTool::OrganisationScope.gate_saving(
+      type: type, savings_id: savings_id, identity_context: current_identity_context
+    )
+    mark_organisation_scoped!
+    saving
+  end
+
   def verify_organisation_scoped!
     return if response.status == 401
     return if @organisation_scoped

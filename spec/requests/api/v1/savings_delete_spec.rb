@@ -1,7 +1,9 @@
 require "rails_helper"
 
 RSpec.describe "DELETE /api/v1/savings/:type/:savings_id" do
-  let!(:contract) { create(:contract) }
+  let!(:contract) { create(:contract, organisation_id: "org-1") }
+
+  before { stub_identity_context(organisation_id: "org-1", subject: "user-1") }
 
   shared_examples "a soft-delete endpoint" do |type:, factory:, model:|
     let!(:saving) { create(factory, contract: contract) }
@@ -67,6 +69,36 @@ RSpec.describe "DELETE /api/v1/savings/:type/:savings_id" do
       expect(response).to have_http_status(:not_found)
       body = JSON.parse(response.body, symbolize_names: true)
       expect(body[:error][:code]).to eq("not_found")
+    end
+  end
+
+  context "when the record's contract belongs to a different organisation" do
+    let(:other_org_contract) { create(:contract, organisation_id: "org-2") }
+    let!(:cashable) { create(:cashable_saving, contract: other_org_contract) }
+
+    it "returns 404 (does not cross organisations)" do
+      delete "/api/v1/savings/cashable/#{cashable.id}"
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "leaves the original record untouched" do
+      delete "/api/v1/savings/cashable/#{cashable.id}"
+
+      expect(CommercialValueTool::CashableSaving.find(cashable.id).expired_record).to be(false)
+    end
+  end
+
+  context "when no identity can be resolved" do
+    let!(:cashable) { create(:cashable_saving, contract: contract) }
+
+    it "returns 401" do
+      allow(Rails.application.config.x.identity_resolver).to receive(:resolve).and_return(nil)
+
+      delete "/api/v1/savings/cashable/#{cashable.id}"
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(CommercialValueTool::CashableSaving.find(cashable.id).expired_record).to be(false)
     end
   end
 

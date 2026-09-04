@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_19_154704) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,8 +23,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.datetime "expired_date_time"
     t.boolean "expired_record"
     t.string "ocid"
+    t.string "represented_organisation_id"
     t.string "savings_type"
-    t.bigint "submitted_by_id"
+    t.string "submitted_by_id"
     t.datetime "updated_at", null: false
     t.index ["expired_record"], name: "index_cashable_savings_on_expired_record"
     t.index ["ocid"], name: "index_cashable_savings_on_ocid"
@@ -65,9 +66,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.datetime "expired_date_time"
     t.boolean "expired_record"
     t.string "ocid"
+    t.string "represented_organisation_id"
     t.string "savings_type"
     t.decimal "savings_value", precision: 15, scale: 2
-    t.bigint "submitted_by_id"
+    t.string "submitted_by_id"
     t.datetime "updated_at", null: false
     t.index ["expired_record"], name: "index_non_cashable_savings_on_expired_record"
     t.index ["ocid"], name: "index_non_cashable_savings_on_ocid"
@@ -80,8 +82,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.datetime "expired_date_time"
     t.boolean "expired_record"
     t.string "ocid"
+    t.string "represented_organisation_id"
     t.string "savings_type"
-    t.bigint "submitted_by_id"
+    t.string "submitted_by_id"
     t.datetime "updated_at", null: false
     t.index ["expired_record"], name: "index_non_monetisable_savings_on_expired_record"
     t.index ["ocid"], name: "index_non_monetisable_savings_on_ocid"
